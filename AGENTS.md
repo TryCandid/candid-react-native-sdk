@@ -4,7 +4,7 @@ This file gives AI coding agents the repo-specific context needed to work safely
 
 ## Project Overview
 
-`candid-react-native` wraps the closed-source [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk) (in-app user testing and voice feedback flows) for React Native. It is built with the Expo Modules API and works in both Expo and bare React Native apps.
+`candid-react-native` wraps the [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk) (in-app user testing and voice feedback flows) for React Native. It is built with the Expo Modules API and works in both Expo and bare React Native apps.
 
 - One npm package with one native module: `CandidReactNative`.
 - The native SDK is consumed as a binary XCFramework, downloaded checksum-pinned at `pod install` time. The SDK source is not in this repo; the private source repo lives at `../candid-ios-sdk` on Candid machines.
