@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["CandidReactNativeModule"]
+  },
+  "android": {
+    "modules": ["com.trycandid.reactnative.CandidReactNativeModule"]
+  }
+}

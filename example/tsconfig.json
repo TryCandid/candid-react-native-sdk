@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "candid-react-native": ["../src/index"],
+      "candid-react-native/*": ["../src/*"]
+    }
+  }
+}

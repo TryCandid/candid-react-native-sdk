@@ -1,0 +1,119 @@
+# candid-react-native
+
+React Native wrapper for the [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk) — in-app user testing and voice feedback flows.
+
+The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/overview/), which works in both Expo apps and bare React Native apps. The native Candid SDK is closed source and distributed as a binary XCFramework; this package downloads the exact, checksum-pinned release at `pod install` time.
+
+## Requirements
+
+- iOS 17.0 or later (the Candid SDK's minimum deployment target)
+- A development build — the module contains native code, so it does not run in Expo Go
+- Android and web are no-ops: every call is safe to make from shared code, but nothing happens
+
+## Installation
+
+### Expo apps
+
+```sh
+npx expo install candid-react-native
+```
+
+Add the config plugin to `app.json`, then create a development build:
+
+```json
+{
+  "expo": {
+    "plugins": ["candid-react-native"]
+  }
+}
+```
+
+The plugin raises the iOS deployment target to 17.0 and adds `NSMicrophoneUsageDescription` to the Info.plist. Pass a custom permission message with:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      ["candid-react-native", { "microphonePermissionText": "We record your voice feedback." }]
+    ]
+  }
+}
+```
+
+### Bare React Native apps
+
+Install [Expo modules](https://docs.expo.dev/bare/installing-expo-modules/) first, then:
+
+```sh
+npm install candid-react-native
+npx pod-install
+```
+
+Since config plugins do not apply to bare apps, configure the project manually:
+
+- set the iOS deployment target to 17.0 (Podfile platform and app target),
+- add `NSMicrophoneUsageDescription` to your Info.plist.
+
+## Usage
+
+```tsx
+import {
+  addCandidEventListener,
+  configure,
+  log,
+  registerTrigger,
+  reset,
+} from 'candid-react-native';
+
+// Once, early in the app lifecycle. Attaches the Candid overlay to the app.
+configure({
+  apiKey: 'YOUR_API_KEY',
+  userId: 'user-123',
+  appearance: {
+    primaryColor: '#35C884',
+    font: { systemDesign: 'rounded' },
+    widgetPosition: 'bottomRight',
+  },
+});
+
+// Register that a trigger fired. The backend decides whether to present a study.
+registerTrigger('home');
+
+// Present the resolved study every time (e.g. debug menus, internal builds).
+registerTrigger('home', { oncePerUser: false });
+
+// Forward analytics events so Candid can match tasks.
+log('add_to_playlist_save', { source: 'player' });
+
+// Observe internal SDK actions and forward them to your own analytics.
+const subscription = addCandidEventListener(({ name, properties }) => {
+  console.log('Candid event', name, properties);
+});
+
+// Clear the persisted per-user presentation history.
+reset();
+```
+
+See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (options, step timings, appearance).
+
+Not yet exposed by the wrapper: completion gifts (`CompletionGift`) and custom font providers. Custom fonts are supported by name via `appearance.font.customName`.
+
+## How the native SDK is delivered
+
+`ios/CandidReactNative.podspec` pins a specific CandidSDK release and its SHA-256 checksum. During `pod install` it downloads `CandidSDK.xcframework.zip` from the [public GitHub release](https://github.com/TryCandid/candid-ios-sdk/releases), verifies the checksum, and unpacks it next to the podspec. Bumping the SDK version means updating `candid_sdk_version` and `candid_sdk_checksum` in the podspec.
+
+## Example app
+
+`example/` is a prebuilt Expo app wired to the local module:
+
+```sh
+cd example
+npm install
+npx pod-install ios
+npx expo run:ios
+```
+
+## Development notes
+
+- `npm run build` type-checks and builds the module to `build/`.
+- The example app's iOS project is already configured (deployment target 17.0, microphone permission), so the config plugin is intentionally not listed in `example/app.json`.
