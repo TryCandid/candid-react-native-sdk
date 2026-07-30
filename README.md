@@ -113,7 +113,10 @@ npx pod-install ios
 npx expo run:ios
 ```
 
+Like the iOS SDK sample, the example offers Local / Staging / Prod environments. The SDK itself always targets the production Candid API; the switcher works through a debug-only `URLProtocol` in the example's `AppDelegate.swift` that rewrites Candid API requests to the base URL persisted by the JS side (via React Native's `Settings` API). The Local base URL is editable — when running on a physical device, replace `localhost` with your Mac's LAN IP.
+
 ## Development notes
 
 - `npm run build` type-checks and builds the module to `build/`.
 - The example app's iOS project is already configured (deployment target 17.0, microphone permission), so the config plugin is intentionally not listed in `example/app.json`.
+- The overlay is hosted in a passthrough container inside the app's main window rather than via `Candid.attachOverlay(to:)` of the pinned SDK release: a hosting view attached directly over the React Native root view would swallow every touch, and a separate overlay `UIWindow` would be invisible in ReplayKit recordings (see `CandidOverlayPresenter` in `ios/CandidReactNativeModule.swift`). The same fix landed in the SDK's UIKit attach API (renamed to `Candid.attachUIKitOverlay(to:)`); once a release ships with it, the wrapper can call that directly.

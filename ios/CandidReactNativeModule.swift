@@ -1,5 +1,6 @@
 import CandidSDK
 import ExpoModulesCore
+import SwiftUI
 import UIKit
 
 public class CandidReactNativeModule: Module {
@@ -19,9 +20,7 @@ public class CandidReactNativeModule: Module {
           ])
         }
 
-        if let rootViewController = Self.hostRootViewController() {
-          Candid.attachOverlay(to: rootViewController)
-        }
+        CandidOverlayPresenter.attachIfNeeded()
       }
     }
 
@@ -62,18 +61,129 @@ public class CandidReactNativeModule: Module {
     }
   }
 
-  @MainActor
-  private static func hostRootViewController() -> UIViewController? {
-    let windowScenes = UIApplication.shared.connectedScenes
-      .compactMap { $0 as? UIWindowScene }
-    let window = windowScenes
-      .flatMap(\.windows)
-      .first(where: \.isKeyWindow) ?? windowScenes.first?.windows.first
-    var rootViewController = window?.rootViewController
-    while let presented = rootViewController?.presentedViewController {
-      rootViewController = presented
+}
+
+// MARK: - Overlay hosting
+
+/// Hosts the Candid overlay inside the app's main window instead of the pinned SDK release's
+/// `Candid.attachOverlay(to:)` (renamed `attachUIKitOverlay(to:)` upstream).
+///
+/// Two constraints shape this setup:
+/// - The SDK's ReplayKit capture records the app's main window, so the overlay must live in
+///   that window (a separate overlay `UIWindow` is invisible in recordings).
+/// - A plain `UIHostingController` view attached over the React Native root view swallows
+///   every touch (`_UIHostingView` participates in UIKit hit testing even when its SwiftUI
+///   content disables hit testing), which froze taps and scrolling in the host app.
+///
+/// The overlay is therefore wrapped in a passthrough container in the app window that only
+/// keeps touches landing on actual Candid UI and lets everything else fall through to the
+/// React Native content below.
+@MainActor
+enum CandidOverlayPresenter {
+  private static weak var container: PassthroughOverlayContainerView?
+
+  static func attachIfNeeded() {
+    guard container == nil else { return }
+
+    let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    let window = windowScenes.flatMap(\.windows).first(where: \.isKeyWindow)
+      ?? windowScenes.first?.windows.first
+    guard let rootViewController = window?.rootViewController else { return }
+
+    let hostingController = UIHostingController(rootView: CandidOverlayRootView())
+    hostingController.view.backgroundColor = .clear
+    hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+
+    let container = PassthroughOverlayContainerView(hostingView: hostingController.view)
+    container.translatesAutoresizingMaskIntoConstraints = false
+
+    rootViewController.addChild(hostingController)
+    container.addSubview(hostingController.view)
+    rootViewController.view.addSubview(container)
+    hostingController.didMove(toParent: rootViewController)
+
+    NSLayoutConstraint.activate([
+      container.topAnchor.constraint(equalTo: rootViewController.view.topAnchor),
+      container.bottomAnchor.constraint(equalTo: rootViewController.view.bottomAnchor),
+      container.leadingAnchor.constraint(equalTo: rootViewController.view.leadingAnchor),
+      container.trailingAnchor.constraint(equalTo: rootViewController.view.trailingAnchor),
+      hostingController.view.topAnchor.constraint(equalTo: container.topAnchor),
+      hostingController.view.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+      hostingController.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+      hostingController.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+    ])
+
+    self.container = container
+  }
+}
+
+private struct CandidOverlayRootView: View {
+  var body: some View {
+    Color.clear
+      .ignoresSafeArea()
+      .candidOverlay()
+  }
+}
+
+/// A view that only handles touches landing on visible Candid UI and lets every other touch
+/// fall through to the sibling React Native view below. `_UIHostingView` returns itself from
+/// `hitTest` for its entire bounds, so view identity alone cannot distinguish the transparent
+/// background from actual overlay content; visible content is detected from the hosting
+/// view's layer tree instead.
+private final class PassthroughOverlayContainerView: UIView {
+  private let hostingView: UIView
+
+  init(hostingView: UIView) {
+    self.hostingView = hostingView
+    super.init(frame: .zero)
+    backgroundColor = .clear
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) is not supported")
+  }
+
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    guard let hitView = super.hitTest(point, with: event) else { return nil }
+    if hitView !== self, hitView !== hostingView {
+      // A concrete UIKit subview of the SwiftUI content (text fields, sheets, ...).
+      return hitView
     }
-    return rootViewController
+    return Self.hasVisibleContent(in: hostingView.layer, at: point) ? hitView : nil
+  }
+
+  /// Whether any visible rendered layer under `layer` contains `point` (expressed in the
+  /// coordinate space of `layer`'s superlayer, matching `CALayer.hitTest`). The idle overlay
+  /// renders nothing, so its layer tree has no visible content and all touches fall through;
+  /// the bubble captures only its own region, and a presented modal captures everything.
+  private static func hasVisibleContent(in layer: CALayer, at point: CGPoint) -> Bool {
+    if layer.isHidden || layer.opacity < 0.01 {
+      return false
+    }
+    let localPoint = layer.convert(point, from: layer.superlayer)
+    guard layer.masksToBounds == false || layer.bounds.contains(localPoint) else {
+      return false
+    }
+
+    if layer.bounds.contains(localPoint), rendersContent(layer) {
+      return true
+    }
+    return (layer.sublayers ?? []).contains { hasVisibleContent(in: $0, at: localPoint) }
+  }
+
+  private static func rendersContent(_ layer: CALayer) -> Bool {
+    if layer.contents != nil {
+      return true
+    }
+    if let backgroundColor = layer.backgroundColor, backgroundColor.alpha > 0.01 {
+      return true
+    }
+    if let borderColor = layer.borderColor, borderColor.alpha > 0.01, layer.borderWidth > 0 {
+      return true
+    }
+    // Text, shapes, and gradients draw through dedicated layer classes without `contents`.
+    return layer is CATextLayer || layer is CAShapeLayer || layer is CAGradientLayer
   }
 }
 

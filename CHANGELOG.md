@@ -13,4 +13,8 @@
 
 ### 🐛 Bug fixes
 
+- Host the Candid overlay in a passthrough container in the app's main window instead of `Candid.attachOverlay(to:)`, whose hosting view swallowed every touch in the host app (taps and scrolling were dead). The container stays in the main window — not a separate overlay `UIWindow` — so the Candid UI remains visible in ReplayKit recordings.
+
 ### 💡 Others
+
+- The example app mirrors the iOS sample's Local / Staging / Prod environment switcher (debug-only `URLProtocol` rewrite in the example, editable Local base URL) and persists connection settings across launches.
