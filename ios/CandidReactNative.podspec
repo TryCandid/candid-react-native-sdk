@@ -78,7 +78,7 @@ end
 
 Pod::Spec.new do |s|
   s.name           = 'CandidReactNative'
-  s.version        = '0.1.0'
+  s.version        = '0.2.0'
   s.summary        = 'React Native wrapper for the Candid iOS SDK'
   s.description    = 'Expo module exposing the Candid in-app user testing and voice feedback SDK to React Native apps.'
   s.author         = 'Candid'
