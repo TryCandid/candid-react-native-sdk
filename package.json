@@ -19,13 +19,13 @@
     "candid-react-native",
     "CandidReactNative"
   ],
-  "repository": "https://github.com/TryCandid/candid-react-native",
+  "repository": "https://github.com/TryCandid/candid-react-native-sdk",
   "bugs": {
-    "url": "https://github.com/TryCandid/candid-react-native/issues"
+    "url": "https://github.com/TryCandid/candid-react-native-sdk/issues"
   },
   "author": "Candid <dev@trycandid.io> (https://github.com/TryCandid)",
   "license": "MIT",
-  "homepage": "https://github.com/TryCandid/candid-react-native#readme",
+  "homepage": "https://github.com/TryCandid/candid-react-native-sdk#readme",
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@types/jest": "^29.2.1",

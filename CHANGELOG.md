@@ -6,14 +6,14 @@
 
 ### 🎉 New features
 
-- Initial wrapper around the Candid iOS SDK (v0.1.1): `configure`, `registerTrigger`, `log`, `reset`, and `addCandidEventListener`.
-- Expo config plugin that raises the iOS deployment target to 17.0 and adds the microphone usage description.
+- Initial wrapper around the Candid iOS SDK (v0.2.0): `configure`, `registerTrigger`, `log`, `reset`, and `addCandidEventListener`.
+- Expo config plugin that ensures the iOS deployment target is at least 15.1 (the native SDK's floor) and adds the microphone usage description. The pod's platform automatically matches the host app's `expo-modules-core` floor when it is higher (e.g. 16.4 on Expo SDK 57).
 - The podspec downloads the checksum-pinned CandidSDK XCFramework from the public GitHub release at `pod install` time.
 - Android and web are safe no-ops.
 
 ### 🐛 Bug fixes
 
-- Host the Candid overlay in a passthrough container in the app's main window instead of `Candid.attachOverlay(to:)`, whose hosting view swallowed every touch in the host app (taps and scrolling were dead). The container stays in the main window — not a separate overlay `UIWindow` — so the Candid UI remains visible in ReplayKit recordings.
+- The overlay is attached via `Candid.attachUIKitOverlay(to:)` (SDK 0.2.0+), which hosts it in the app's main window — so the Candid UI stays visible in ReplayKit recordings — and passes every touch outside visible Candid UI through to the React Native content.
 
 ### 💡 Others
 

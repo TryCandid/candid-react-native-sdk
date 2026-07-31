@@ -2,8 +2,10 @@ const { createRunOncePlugin, withInfoPlist, withPodfileProperties } = require('e
 
 const pkg = require('../package.json');
 
-// The Candid iOS SDK requires iOS 17 (see the CandidSDK SPM package platforms).
-const MIN_IOS_DEPLOYMENT_TARGET = '17.0';
+// The native Candid iOS SDK requires iOS 15.1. The host app's Expo SDK may impose a
+// higher floor of its own (e.g. 16.4 on Expo SDK 57), which Expo's tooling already
+// enforces; this plugin only guarantees the Candid minimum.
+const MIN_IOS_DEPLOYMENT_TARGET = '15.1';
 
 const DEFAULT_MICROPHONE_PERMISSION =
   'The microphone records your voice feedback during Candid user testing sessions.';

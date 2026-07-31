@@ -6,7 +6,7 @@ The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/o
 
 ## Requirements
 
-- iOS 17.0 or later (the Candid SDK's minimum deployment target)
+- iOS 15.1 or later (the native Candid SDK's floor; your Expo SDK may impose a higher minimum of its own, e.g. 16.4 on Expo SDK 57, and the pod automatically matches it)
 - A development build — the module contains native code, so it does not run in Expo Go
 - Android and web are no-ops: every call is safe to make from shared code, but nothing happens
 
@@ -28,7 +28,7 @@ Add the config plugin to `app.json`, then create a development build:
 }
 ```
 
-The plugin raises the iOS deployment target to 17.0 and adds `NSMicrophoneUsageDescription` to the Info.plist. Pass a custom permission message with:
+The plugin ensures the iOS deployment target is at least 15.1 and adds `NSMicrophoneUsageDescription` to the Info.plist. Pass a custom permission message with:
 
 ```json
 {
@@ -51,7 +51,7 @@ npx pod-install
 
 Since config plugins do not apply to bare apps, configure the project manually:
 
-- set the iOS deployment target to 17.0 (Podfile platform and app target),
+- make sure the iOS deployment target is at least 15.1,
 - add `NSMicrophoneUsageDescription` to your Info.plist.
 
 ## Usage
@@ -118,5 +118,5 @@ Like the iOS SDK sample, the example offers Local / Staging / Prod environments.
 ## Development notes
 
 - `npm run build` type-checks and builds the module to `build/`.
-- The example app's iOS project is already configured (deployment target 17.0, microphone permission), so the config plugin is intentionally not listed in `example/app.json`.
-- The overlay is hosted in a passthrough container inside the app's main window rather than via `Candid.attachOverlay(to:)` of the pinned SDK release: a hosting view attached directly over the React Native root view would swallow every touch, and a separate overlay `UIWindow` would be invisible in ReplayKit recordings (see `CandidOverlayPresenter` in `ios/CandidReactNativeModule.swift`). The same fix landed in the SDK's UIKit attach API (renamed to `Candid.attachUIKitOverlay(to:)`); once a release ships with it, the wrapper can call that directly.
+- The example app's iOS project is already configured (microphone permission), so the config plugin is intentionally not listed in `example/app.json`.
+- The overlay is attached to the app's root view controller via `Candid.attachUIKitOverlay(to:)` (see `CandidOverlayPresenter` in `ios/CandidReactNativeModule.swift`). The SDK hosts it in the app's main window — so ReplayKit recordings capture the Candid UI — and only intercepts touches landing on visible Candid UI; everything else passes through to the React Native content.

@@ -7,8 +7,8 @@ require 'uri'
 # https://github.com/TryCandid/candid-ios-sdk (the same artifact the SPM binary target uses).
 # The exact release is pinned here together with its SHA-256 checksum, downloaded once at
 # `pod install` time and cached next to this podspec.
-candid_sdk_version = '0.1.1'
-candid_sdk_checksum = '46a70f7a0d2ee09213e40731b8bc30ae0c724b3297f25dc98bb4ff423c81352d'
+candid_sdk_version = '0.2.0'
+candid_sdk_checksum = '08ab1587a96600714816791d269b1203cbfc041ed34a24414517dc942f9a76ce'
 candid_sdk_url = "https://github.com/TryCandid/candid-ios-sdk/releases/download/v#{candid_sdk_version}/CandidSDK.xcframework.zip"
 
 frameworks_dir = File.join(__dir__, 'Frameworks')
@@ -50,18 +50,44 @@ unless File.exist?(version_marker) && File.directory?(xcframework_dir)
   FileUtils.touch(version_marker)
 end
 
+# The native Candid SDK supports iOS 15.1, which is the wrapper's own floor. CocoaPods
+# refuses to resolve a dependency edge when the dependent pod declares a lower deployment
+# target than the dependency, and ExpoModulesCore's floor varies per Expo SDK (15.1 on
+# older SDKs, 16.4 on SDK 57). Mirror the host app's installed expo-modules-core floor
+# when it is higher than ours, so the wrapper installs across Expo SDK versions.
+candid_min_ios = '15.1'
+begin
+  search_root = defined?(Pod::Config) ? Pod::Config.instance.installation_root.to_s : __dir__
+  current = search_root
+  5.times do
+    emc_podspec = File.join(current, 'node_modules', 'expo-modules-core', 'ExpoModulesCore.podspec')
+    if File.exist?(emc_podspec)
+      if (match = File.read(emc_podspec).match(/:ios\s*=>\s*'([\d.]+)'/))
+        emc_min_ios = match[1]
+        candid_min_ios = emc_min_ios if Gem::Version.new(emc_min_ios) > Gem::Version.new(candid_min_ios)
+      end
+      break
+    end
+    parent = File.dirname(current)
+    break if parent == current
+    current = parent
+  end
+rescue StandardError
+  # Fall back to the SDK floor; CocoaPods will surface any real incompatibility.
+end
+
 Pod::Spec.new do |s|
   s.name           = 'CandidReactNative'
   s.version        = '0.1.0'
   s.summary        = 'React Native wrapper for the Candid iOS SDK'
   s.description    = 'Expo module exposing the Candid in-app user testing and voice feedback SDK to React Native apps.'
   s.author         = 'Candid'
-  s.homepage       = 'https://github.com/TryCandid/candid-react-native'
+  s.homepage       = 'https://github.com/TryCandid/candid-react-native-sdk'
   s.license        = { type: 'MIT' }
   s.platforms      = {
-    :ios => '17.0'
+    :ios => candid_min_ios
   }
-  s.source         = { git: 'https://github.com/TryCandid/candid-react-native.git' }
+  s.source         = { git: 'https://github.com/TryCandid/candid-react-native-sdk.git' }
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
