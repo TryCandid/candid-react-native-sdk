@@ -4,20 +4,20 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// npm v7+ will install ../node_modules/react and ../node_modules/react-native because of peerDependencies.
-// To prevent the incompatible react-native between ./node_modules/react-native and ../node_modules/react-native,
-// excludes the one from the parent folder when bundling.
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// The package root installs its own copies of react, react-native, expo and every devDependency
+// (jest, pretty-format, ...). None of them are needed to bundle this app -- the package declares
+// no runtime dependencies -- and letting them resolve produces duplicate modules in the bundle.
+// Block the parent node_modules wholesale so everything resolves from ./node_modules instead.
 config.resolver.blockList = [
   ...Array.from(config.resolver.blockList ?? []),
-  // On windows the path will resolve with `\`. We need to escape it with `\\` for the RegExp.
-  new RegExp(path.resolve('..', 'node_modules', 'react').replace(/\\/g, '\\\\')),
-  new RegExp(path.resolve('..', 'node_modules', 'react-native').replace(/\\/g, '\\\\')),
+  new RegExp(`^${escapeRegExp(path.resolve(__dirname, '..', 'node_modules') + path.sep)}`),
 ];
 
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, './node_modules'),
-  path.resolve(__dirname, '../node_modules'),
-];
+// The linked package at `..` lives outside this app's tree, so its imports (expo,
+// react-native) have to fall back to this app's node_modules.
+config.resolver.nodeModulesPaths = [path.resolve(__dirname, './node_modules')];
 
 config.resolver.extraNodeModules = {
   '@trycandid/react-native': '..',
