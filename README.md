@@ -2,7 +2,7 @@
 
 React Native wrapper for the [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk) — in-app user testing and voice feedback flows.
 
-The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/overview/), which works in both Expo apps and bare React Native apps. The native Candid SDK is closed source and distributed as a binary XCFramework; this package downloads the exact, checksum-pinned release at `pod install` time.
+The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/overview/), which works in both Expo apps and bare React Native apps.
 
 ## Requirements
 
