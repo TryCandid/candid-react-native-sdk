@@ -6,9 +6,9 @@ The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/o
 
 ## Requirements
 
-- iOS 15.1 or later (the native Candid SDK's floor; your Expo SDK may impose a higher minimum of its own, e.g. 16.4 on Expo SDK 57, and the pod automatically matches it)
+- iOS 15.1 or later
 - A development build — the module contains native code, so it does not run in Expo Go
-- Android and web are no-ops: every call is safe to make from shared code, but nothing happens
+- Android and web are currently not supported: every call is safe to make, but are no-ops
 
 ## Installation
 
@@ -28,7 +28,7 @@ Add the config plugin to `app.json`, then create a development build:
 }
 ```
 
-The plugin ensures the iOS deployment target is at least 15.1 and adds `NSMicrophoneUsageDescription` to the Info.plist. Pass a custom permission message with:
+The plugin adds `NSMicrophoneUsageDescription` to the Info.plist. Pass a custom permission message with:
 
 ```json
 {
@@ -89,31 +89,11 @@ log('add_to_playlist_save', { source: 'player' });
 const subscription = addCandidEventListener(({ name, properties }) => {
   console.log('Candid event', name, properties);
 });
-
-// Clear the persisted per-user presentation history.
-reset();
 ```
 
 See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (options, step timings, appearance).
 
 Not yet exposed by the wrapper: completion gifts (`CompletionGift`) and custom font providers. Custom fonts are supported by name via `appearance.font.customName`.
-
-## How the native SDK is delivered
-
-`ios/CandidReactNative.podspec` pins a specific CandidSDK release and its SHA-256 checksum. During `pod install` it downloads `CandidSDK.xcframework.zip` from the [public GitHub release](https://github.com/TryCandid/candid-ios-sdk/releases), verifies the checksum, and unpacks it next to the podspec. Bumping the SDK version means updating `candid_sdk_version` and `candid_sdk_checksum` in the podspec.
-
-## Example app
-
-`example/` is a prebuilt Expo app wired to the local module:
-
-```sh
-cd example
-npm install
-npx pod-install ios
-npx expo run:ios
-```
-
-Like the iOS SDK sample, the example offers Local / Staging / Prod environments. The SDK itself always targets the production Candid API; the switcher works through a debug-only `URLProtocol` in the example's `AppDelegate.swift` that rewrites Candid API requests to the base URL persisted by the JS side (via React Native's `Settings` API). The Local base URL is editable — when running on a physical device, replace `localhost` with your Mac's LAN IP.
 
 ## Development notes
 
