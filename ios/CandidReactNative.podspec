@@ -7,8 +7,8 @@ require 'uri'
 # https://github.com/TryCandid/candid-ios-sdk (the same artifact the SPM binary target uses).
 # The exact release is pinned here together with its SHA-256 checksum, downloaded once at
 # `pod install` time and cached next to this podspec.
-candid_sdk_version = '0.2.0'
-candid_sdk_checksum = '08ab1587a96600714816791d269b1203cbfc041ed34a24414517dc942f9a76ce'
+candid_sdk_version = '0.3.0'
+candid_sdk_checksum = 'e4b454e724d5404b91986889678f5afa91989cd0f8ccd2b14945bfb4fc7cdbea'
 candid_sdk_url = "https://github.com/TryCandid/candid-ios-sdk/releases/download/v#{candid_sdk_version}/CandidSDK.xcframework.zip"
 
 frameworks_dir = File.join(__dir__, 'Frameworks')

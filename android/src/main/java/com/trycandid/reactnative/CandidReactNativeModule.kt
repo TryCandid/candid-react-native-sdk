@@ -14,6 +14,9 @@ class CandidReactNativeModule : Module() {
     Function("configure") { _: Map<String, Any?>? ->
     }
 
+    Function("setUserId") { _: String? ->
+    }
+
     Function("registerTrigger") { _: String, _: Boolean? ->
     }
 

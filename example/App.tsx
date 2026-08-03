@@ -3,6 +3,7 @@ import {
   configure,
   log,
   registerTrigger,
+  setUserId as setCandidUserId,
   CandidSystemFontDesign,
   CandidWidgetPosition,
 } from '@trycandid/react-native';
@@ -65,12 +66,13 @@ const PRIMARY_COLORS = [
   { title: 'Pink', hex: '#E84393' },
 ];
 
-const FONT_CHOICES: { title: string; design?: CandidSystemFontDesign; custom?: boolean }[] = [
-  { title: 'System', design: 'default' },
-  { title: 'Rounded', design: 'rounded' },
-  { title: 'Serif', design: 'serif' },
-  { title: 'Monospaced', design: 'monospaced' },
-  { title: 'Custom', custom: true },
+// Entries without a `systemDesign` use the custom font name entered below.
+const FONT_CHOICES: { title: string; systemDesign?: CandidSystemFontDesign }[] = [
+  { title: 'System', systemDesign: 'default' },
+  { title: 'Rounded', systemDesign: 'rounded' },
+  { title: 'Serif', systemDesign: 'serif' },
+  { title: 'Monospaced', systemDesign: 'monospaced' },
+  { title: 'Custom' },
 ];
 
 const WIDGET_POSITIONS: { title: string; position: CandidWidgetPosition }[] = [
@@ -109,22 +111,18 @@ export default function App() {
   useEffect(() => {
     configure({
       apiKey: apiKey || undefined,
-      userId: userId || undefined,
-      options: {
-        recordingDuration,
-      },
+      recordingDuration,
       appearance: {
         primaryColor,
-        font: fontChoice.custom
-          ? { customName: customFontName }
-          : { systemDesign: fontChoice.design },
+        font: fontChoice.systemDesign
+          ? { systemDesign: fontChoice.systemDesign }
+          : { customName: customFontName },
         widgetPosition,
         widgetVerticalPadding,
       },
     });
   }, [
     apiKey,
-    userId,
     recordingDuration,
     primaryColor,
     fontChoice,
@@ -132,6 +130,10 @@ export default function App() {
     widgetPosition,
     widgetVerticalPadding,
   ]);
+
+  useEffect(() => {
+    setCandidUserId(userId || null);
+  }, [userId]);
 
   useEffect(() => {
     const subscription = addCandidEventListener((event) => {
@@ -263,7 +265,7 @@ export default function App() {
               />
             ))}
           </View>
-          {fontChoice.custom ? (
+          {fontChoice.systemDesign ? null : (
             <TextInput
               style={styles.input}
               value={customFontNameDraft}
@@ -274,7 +276,7 @@ export default function App() {
               autoCorrect={false}
               returnKeyType="done"
             />
-          ) : null}
+          )}
 
           <Text style={styles.label}>Widget position</Text>
           <View style={styles.chipRow}>

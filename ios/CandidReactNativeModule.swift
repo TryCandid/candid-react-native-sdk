@@ -23,6 +23,12 @@ public class CandidReactNativeModule: Module {
       }
     }
 
+    Function("setUserId") { (userId: String?) in
+      Self.onMain {
+        Candid.setUserId(userId)
+      }
+    }
+
     Function("registerTrigger") { (trigger: String, oncePerUser: Bool?) in
       Self.onMain {
         Candid.register(trigger: trigger, oncePerUser: oncePerUser ?? true)
@@ -89,15 +95,9 @@ enum CandidOverlayPresenter {
 
 struct ConfigurationRecord: Record {
   @Field var apiKey: String?
-  @Field var userId: String?
-  @Field var options: OptionsRecord?
+  @Field var recordingDuration: Double?
   @Field var stepTimings: StepTimingsRecord?
   @Field var appearance: AppearanceRecord?
-}
-
-struct OptionsRecord: Record {
-  @Field var rewardText: String?
-  @Field var recordingDuration: Double?
 }
 
 struct StepTimingsRecord: Record {
@@ -128,54 +128,44 @@ extension Optional where Wrapped == ConfigurationRecord {
       return Candid.Configuration()
     }
 
-    return Candid.Configuration(
+    var configuration = Candid.Configuration(
       apiKey: record.apiKey,
-      userId: record.userId,
-      options: record.options.makeOptions(),
       stepTimings: record.stepTimings.makeStepTimings(),
       appearance: record.appearance.makeAppearance()
     )
-  }
-}
-
-extension Optional where Wrapped == OptionsRecord {
-  func makeOptions() -> Candid.Options {
-    var options = Candid.Options()
-    guard let record = self else {
-      return options
-    }
-    if let rewardText = record.rewardText {
-      options.rewardText = rewardText
-    }
     if let recordingDuration = record.recordingDuration {
-      options.recordingDuration = recordingDuration
+      configuration.recordingDuration = recordingDuration
     }
-    return options
+    return configuration
   }
 }
 
 extension Optional where Wrapped == StepTimingsRecord {
-  func makeStepTimings() -> Candid.Configuration.StepTimings {
-    var stepTimings = Candid.Configuration.StepTimings()
+  /// Only the step types the JS side provided are inserted; the SDK falls back to its own
+  /// default timing for missing keys.
+  func makeStepTimings() -> [Candid.Configuration.StepType: Candid.Configuration.StepTiming] {
     guard let record = self else {
-      return stepTimings
+      return [:]
     }
-    stepTimings.openQuestion = record.openQuestion.makeStepTiming(from: stepTimings.openQuestion)
-    stepTimings.action = record.action.makeStepTiming(from: stepTimings.action)
+
+    var stepTimings: [Candid.Configuration.StepType: Candid.Configuration.StepTiming] = [:]
+    if let openQuestion = record.openQuestion {
+      stepTimings[.openQuestion] = openQuestion.makeStepTiming(from: .openQuestionDefault)
+    }
+    if let action = record.action {
+      stepTimings[.action] = action.makeStepTiming(from: .actionDefault)
+    }
     return stepTimings
   }
 }
 
-extension Optional where Wrapped == StepTimingRecord {
+extension StepTimingRecord {
   func makeStepTiming(from defaultTiming: Candid.Configuration.StepTiming) -> Candid.Configuration.StepTiming {
     var timing = defaultTiming
-    guard let record = self else {
-      return timing
-    }
-    if let canSkipAfter = record.canSkipAfter {
+    if let canSkipAfter = canSkipAfter {
       timing.canSkipAfter = canSkipAfter
     }
-    if let promptEvery = record.promptEvery {
+    if let promptEvery = promptEvery {
       timing.promptEvery = promptEvery
     }
     return timing
@@ -198,8 +188,9 @@ extension Optional where Wrapped == AppearanceRecord {
         appearance.font = .system(Candid.SystemFontDesign(rawValue: systemDesign))
       }
     }
-    if let widgetPosition = record.widgetPosition {
-      appearance.widgetPosition = Candid.WidgetPosition(rawValue: widgetPosition)
+    if let widgetPosition = record.widgetPosition,
+       let position = Candid.WidgetPosition(rawValue: widgetPosition) {
+      appearance.widgetPosition = position
     }
     if let widgetVerticalPadding = record.widgetVerticalPadding {
       appearance.widgetVerticalPadding = widgetVerticalPadding

@@ -5,13 +5,12 @@ export type CandidWidgetPosition = 'topLeft' | 'topRight' | 'bottomLeft' | 'bott
 export type CandidSystemFontDesign = 'default' | 'rounded' | 'serif' | 'monospaced';
 
 /**
- * Font used by the Candid UI. Provide either a system font design or the PostScript
- * name of a custom font bundled in the host app. `customName` wins when both are set.
+ * Font used by the Candid UI. Set exactly one of the two: a system font design, or the
+ * PostScript name of a custom font bundled in the host app.
  */
-export type CandidFont = {
-  systemDesign?: CandidSystemFontDesign;
-  customName?: string;
-};
+export type CandidFont =
+  | { systemDesign: CandidSystemFontDesign; customName?: never }
+  | { customName: string; systemDesign?: never };
 
 /** Timing of a single flow step. All values are in seconds. */
 export type CandidStepTiming = {
@@ -21,17 +20,15 @@ export type CandidStepTiming = {
   promptEvery?: number;
 };
 
-export type CandidStepTimings = {
-  openQuestion?: CandidStepTiming;
-  action?: CandidStepTiming;
-};
+/** Flow step types that can be timed individually. */
+export type CandidStepType = 'openQuestion' | 'action';
 
-export type CandidOptions = {
-  /** Message shown on the completion screen. */
-  rewardText?: string;
-  /** Maximum recording duration in seconds. Defaults to 600. */
-  recordingDuration?: number;
-};
+/**
+ * Timing overrides per step type. Step types without an entry use their default timing:
+ * `canSkipAfter: 1`, `promptEvery: 15` for open questions, `canSkipAfter: 30`,
+ * `promptEvery: 0` for actions.
+ */
+export type CandidStepTimings = Partial<Record<CandidStepType, CandidStepTiming>>;
 
 export type CandidAppearance = {
   /** Primary brand color as a hex string, e.g. `#35C884`. */
@@ -48,8 +45,8 @@ export type CandidAppearance = {
 
 export type CandidConfiguration = {
   apiKey?: string;
-  userId?: string;
-  options?: CandidOptions;
+  /** Maximum recording duration in seconds. Defaults to 600. */
+  recordingDuration?: number;
   stepTimings?: CandidStepTimings;
   appearance?: CandidAppearance;
 };

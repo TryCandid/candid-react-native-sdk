@@ -63,18 +63,22 @@ import {
   log,
   registerTrigger,
   reset,
+  setUserId,
 } from '@trycandid/react-native';
 
 // Once, early in the app lifecycle. Attaches the Candid overlay to the app.
 configure({
   apiKey: 'YOUR_API_KEY',
-  userId: 'user-123',
   appearance: {
     primaryColor: '#35C884',
     font: { systemDesign: 'rounded' },
     widgetPosition: 'bottomRight',
   },
 });
+
+// Any time, before or after `configure` (e.g. once the user logs in). Pass `null` to clear
+// it; without a user id, requests are sent anonymously.
+setUserId('user-123');
 
 // Register that a trigger fired. The backend decides whether to present a study.
 registerTrigger('home');
@@ -91,9 +95,9 @@ const subscription = addCandidEventListener(({ name, properties }) => {
 });
 ```
 
-See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (options, step timings, appearance).
+See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (recording duration, step timings, appearance).
 
-Not yet exposed by the wrapper: completion gifts (`CompletionGift`) and custom font providers. Custom fonts are supported by name via `appearance.font.customName`.
+Not yet exposed by the wrapper: rewards (`Reward`) and custom font providers. Custom fonts are supported by name via `appearance.font.customName`.
 
 ## Development notes
 

@@ -15,6 +15,15 @@ export function configure(configuration: CandidConfiguration = {}): void {
 }
 
 /**
+ * Sets the user id attached to study resolution and uploads, or clears it with `null`.
+ * Can be called before or after `configure`, e.g. once the user logs in. Without a user id,
+ * requests are sent anonymously and once-per-user presentation is tracked locally per install.
+ */
+export function setUserId(userId: string | null): void {
+  CandidReactNativeModule.setUserId(userId);
+}
+
+/**
  * Registers that `trigger` fired, resolves the study the backend selects for it (for the
  * configured user), and presents that study when one is selected. No UI is shown when the
  * user is sampled out or no study matches the trigger.

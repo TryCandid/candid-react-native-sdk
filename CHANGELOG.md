@@ -2,6 +2,13 @@
 
 ## Unpublished
 
+### 💥 Breaking changes
+
+- Updated to Candid iOS SDK 0.3.0 and its new configuration format.
+- Removed `userId` from `configure`; set it with the new `setUserId(userId)` at any time, before or after `configure`. Pass `null` to clear it.
+- Flattened `configure`: `options.recordingDuration` is now `recordingDuration` at the top level. The `options` object and its `rewardText` field are gone.
+- `appearance.font` now requires exactly one of `systemDesign` or `customName`.
+
 ## 0.2.0 — 2026-07-31
 
 ### 🎉 New features
