@@ -1,6 +1,6 @@
 # @trycandid/react-native
 
-React Native wrapper for the [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk) — in-app user testing and voice feedback flows.
+React Native wrapper for the [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk): in-app user testing and voice feedback flows.
 
 The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/overview/), which works in both Expo apps and bare React Native apps.
 
@@ -57,17 +57,10 @@ Since config plugins do not apply to bare apps, configure the project manually:
 ## Usage
 
 ```tsx
-import {
-  addCandidEventListener,
-  configure,
-  log,
-  registerTrigger,
-  reset,
-  setUserId,
-} from '@trycandid/react-native';
+import * as candid from '@trycandid/react-native';
 
 // Once, early in the app lifecycle. Attaches the Candid overlay to the app.
-configure({
+candid.configure({
   apiKey: 'YOUR_API_KEY',
   appearance: {
     primaryColor: '#35C884',
@@ -78,21 +71,16 @@ configure({
 
 // Any time, before or after `configure` (e.g. once the user logs in). Pass `null` to clear
 // it; without a user id, requests are sent anonymously.
-setUserId('user-123');
+candid.setUserId('user-123');
 
 // Register that a trigger fired. The backend decides whether to present a study.
-registerTrigger('home');
+candid.registerTrigger('home');
 
 // Present the resolved study every time (e.g. debug menus, internal builds).
-registerTrigger('home', { oncePerUser: false });
+candid.registerTrigger('home', { oncePerUser: false });
 
 // Forward analytics events so Candid can match tasks.
-log('add_to_playlist_save', { source: 'player' });
-
-// Observe internal SDK actions and forward them to your own analytics.
-const subscription = addCandidEventListener(({ name, properties }) => {
-  console.log('Candid event', name, properties);
-});
+candid.log('add_to_playlist_save');
 ```
 
 See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (recording duration, step timings, appearance).
