@@ -6,7 +6,7 @@ module.exports = async (env, argv) => {
     {
       ...env,
       babel: {
-        dangerouslyAddModulePathsToTranspile: ['candid-react-native'],
+        dangerouslyAddModulePathsToTranspile: ['@trycandid/react-native'],
       },
     },
     argv

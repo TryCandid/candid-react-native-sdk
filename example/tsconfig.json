@@ -3,8 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "candid-react-native": ["../src/index"],
-      "candid-react-native/*": ["../src/*"]
+      "@trycandid/react-native": ["../src/index"],
+      "@trycandid/react-native/*": ["../src/*"]
     }
   }
 }

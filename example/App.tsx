@@ -5,7 +5,7 @@ import {
   registerTrigger,
   CandidSystemFontDesign,
   CandidWidgetPosition,
-} from 'candid-react-native';
+} from '@trycandid/react-native';
 import { useEffect, useState } from 'react';
 import {
   Platform,

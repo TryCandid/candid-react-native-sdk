@@ -1,4 +1,4 @@
-# candid-react-native
+# @trycandid/react-native
 
 React Native wrapper for the [Candid iOS SDK](https://github.com/TryCandid/candid-ios-sdk) — in-app user testing and voice feedback flows.
 
@@ -15,7 +15,7 @@ The wrapper is built with the [Expo Modules API](https://docs.expo.dev/modules/o
 ### Expo apps
 
 ```sh
-npx expo install candid-react-native
+npx expo install @trycandid/react-native
 ```
 
 Add the config plugin to `app.json`, then create a development build:
@@ -23,7 +23,7 @@ Add the config plugin to `app.json`, then create a development build:
 ```json
 {
   "expo": {
-    "plugins": ["candid-react-native"]
+    "plugins": ["@trycandid/react-native"]
   }
 }
 ```
@@ -34,7 +34,7 @@ The plugin ensures the iOS deployment target is at least 15.1 and adds `NSMicrop
 {
   "expo": {
     "plugins": [
-      ["candid-react-native", { "microphonePermissionText": "We record your voice feedback." }]
+      ["@trycandid/react-native", { "microphonePermissionText": "We record your voice feedback." }]
     ]
   }
 }
@@ -45,7 +45,7 @@ The plugin ensures the iOS deployment target is at least 15.1 and adds `NSMicrop
 Install [Expo modules](https://docs.expo.dev/bare/installing-expo-modules/) first, then:
 
 ```sh
-npm install candid-react-native
+npm install @trycandid/react-native
 npx pod-install
 ```
 
@@ -63,7 +63,7 @@ import {
   log,
   registerTrigger,
   reset,
-} from 'candid-react-native';
+} from '@trycandid/react-native';
 
 // Once, early in the app lifecycle. Attaches the Candid overlay to the app.
 configure({

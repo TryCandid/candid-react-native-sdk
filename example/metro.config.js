@@ -20,7 +20,7 @@ config.resolver.nodeModulesPaths = [
 ];
 
 config.resolver.extraNodeModules = {
-  'candid-react-native': '..',
+  '@trycandid/react-native': '..',
 };
 
 config.watchFolders = [path.resolve(__dirname, '..')];

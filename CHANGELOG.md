@@ -2,6 +2,12 @@
 
 ## Unpublished
 
+## 0.2.0-beta.0 — 2026-08-03
+
+### 💡 Others
+
+- First npm release, published as `@trycandid/react-native` under the `beta` dist tag. The package was named `candid-react-native` while unpublished; that name was never released, so there is nothing to migrate from.
+
 ## 0.2.0 — 2026-07-31
 
 ### 🎉 New features
