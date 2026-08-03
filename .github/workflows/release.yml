@@ -1,0 +1,77 @@
+name: Release
+
+# Publishes the package to npm when a `v*` tag is pushed, e.g. `git tag v0.2.0 && git push origin v0.2.0`.
+# The tag is the trigger and the source of truth for the version: the job refuses to publish unless the
+# tag matches the `version` in package.json, so a forgotten version bump fails before anything is published.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      # Required for npm provenance, which links the published tarball back to this commit and workflow.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Writes the .npmrc that makes `npm publish` read NODE_AUTH_TOKEN.
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify the tag matches package.json
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pkg_version="$(node --print 'require("./package.json").version')"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME implies version $tag_version, but package.json says $pkg_version"
+            exit 1
+          fi
+          echo "Publishing version $pkg_version"
+
+      - run: npm ci
+
+      # `npm ci` normally triggers `prepare`, which rebuilds build/ with tsc — but npm keeps
+      # tightening when lifecycle scripts run, and build/ is this package's `main`. Build it
+      # explicitly so the release never depends on that implicit step.
+      - run: npm run build
+
+      - run: npm run lint
+
+      # build/ is not committed; main and types point into it, so fail loudly if it is missing.
+      - name: Verify the package entry points exist
+        run: |
+          node --print 'const p = require("./package.json"); ["main", "types"].map((k) => { if (!require("fs").existsSync(p[k])) { throw new Error(`${k} -> ${p[k]} is missing from the build`); } return `${k} -> ${p[k]}`; }).join("\n")'
+
+      # Show exactly what will be published; the XCFramework must not appear (it is downloaded at
+      # `pod install` time). Fails the job rather than shipping a vendored binary by accident.
+      - name: Inspect the tarball
+        run: |
+          npm pack --dry-run
+          if npm pack --dry-run --json | node --print 'JSON.parse(require("fs").readFileSync(0, "utf8"))[0].files.some((f) => f.path.startsWith("ios/Frameworks/"))' | grep -q true; then
+            echo "::error::ios/Frameworks/ is in the tarball; the XCFramework must not be vendored into the package"
+            exit 1
+          fi
+
+      # A prerelease tag publishes under a dist-tag named after its prerelease identifier, so it
+      # never becomes `latest`: v0.2.0-beta.0 -> `beta`, v0.3.0-rc.1 -> `rc`. Only a plain
+      # vX.Y.Z tag moves `latest`.
+      - name: Publish to npm
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "$version" == *-* ]]; then
+            dist_tag="$(printf '%s' "${version#*-}" | cut -d. -f1)"
+            echo "Prerelease: publishing under dist-tag '$dist_tag'"
+            npm publish --provenance --access public --tag "$dist_tag"
+          else
+            npm publish --provenance --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
