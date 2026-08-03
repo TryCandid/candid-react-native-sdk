@@ -23,7 +23,7 @@
   "bugs": {
     "url": "https://github.com/TryCandid/candid-react-native-sdk/issues"
   },
-  "author": "Candid <dev@trycandid.io> (https://github.com/TryCandid)",
+  "author": "Candid <contact@trycandid.ai> (https://github.com/TryCandid)",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
