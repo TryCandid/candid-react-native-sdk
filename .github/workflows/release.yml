@@ -34,8 +34,8 @@ jobs:
         with:
           node-version: 24
 
-      # # Trusted publishing needs npm >= 11.5.1; the npm bundled with Node is often older.
-      # - run: npm install --global npm@latest
+      # Trusted publishing needs npm >= 11.5.1; the npm bundled with Node is often older.
+      - run: npm install --global npm@latest
 
       - name: Verify the tag matches package.json
         run: |
