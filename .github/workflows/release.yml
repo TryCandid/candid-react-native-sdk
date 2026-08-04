@@ -3,6 +3,12 @@ name: Release
 # Publishes the package to npm when a `v*` tag is pushed, e.g. `git tag v0.2.0 && git push origin v0.2.0`.
 # The tag is the trigger and the source of truth for the version: the job refuses to publish unless the
 # tag matches the `version` in package.json, so a forgotten version bump fails before anything is published.
+#
+# Authentication is npm trusted publishing (OIDC): npm exchanges this job's GitHub identity token for a
+# short-lived publish credential, so there is no npm token in the repo secrets. It only works if the
+# trusted publisher registered on npmjs.com matches this job exactly — repository `TryCandid/candid-react-native-sdk`,
+# workflow filename `release.yml`, environment `npm-release`. Renaming this file or the environment breaks
+# publishing until the npm-side config is updated.
 on:
   push:
     tags:
@@ -14,17 +20,22 @@ jobs:
     environment: npm-release
     permissions:
       contents: read
-      # Required for npm provenance, which links the published tarball back to this commit and workflow.
+      # Required for trusted publishing and for npm provenance, which links the published tarball back
+      # to this commit and workflow.
       id-token: write
 
     steps:
       - uses: actions/checkout@v4
 
+      # No `registry-url`: it makes setup-node write an `.npmrc` with `_authToken=${NODE_AUTH_TOKEN}`,
+      # which shadows OIDC detection and fails the publish with no token set. registry.npmjs.org is
+      # already npm's default, so the key buys nothing here.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          # Writes the .npmrc that makes `npm publish` read NODE_AUTH_TOKEN.
-          registry-url: 'https://registry.npmjs.org'
+          node-version: 24
+
+      # # Trusted publishing needs npm >= 11.5.1; the npm bundled with Node is often older.
+      # - run: npm install --global npm@latest
 
       - name: Verify the tag matches package.json
         run: |
@@ -73,5 +84,3 @@ jobs:
           else
             npm publish --provenance --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
