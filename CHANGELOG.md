@@ -2,6 +2,10 @@
 
 ## Unpublished
 
+## 0.3.1 — 2026-08-04
+
+- Documentation update.
+
 ## 0.3.0 — 2026-08-03
 
 ### 💥 Breaking changes
