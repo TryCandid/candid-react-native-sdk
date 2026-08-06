@@ -1,0 +1,97 @@
+name: Bump Candid iOS SDK
+
+# Opens a pull request pinning a new Candid iOS SDK release. The diff is one file,
+# ios/candid-sdk.json; the npm version and the changelog are edited by hand when a release is
+# actually cut.
+#
+# Dispatched by the iOS SDK's publish-public-sdk.yml at the end of a real release, and runnable on
+# demand from the Actions tab. Idempotent: re-running for a version that is already pinned makes no
+# changes and opens no pull request.
+#
+# The pull request is deliberately not merged automatically. An iOS SDK release sometimes changes
+# API the wrapper bridges, in which case ci.yml's ios-build job fails and the wrapper needs code
+# changes pushed onto this branch before it can land.
+#
+# Authenticates as the "candid-release" GitHub App, which must be installed on this repository
+# with Contents read/write and Pull requests read/write. This is not optional: a pull request
+# opened with the default GITHUB_TOKEN does not trigger ci.yml, so the gate would never run.
+# Requires CANDID_RELEASE_APP_ID and CANDID_RELEASE_APP_PRIVATE_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Candid iOS SDK version to pin, e.g. 0.4.0
+        required: true
+        type: string
+      checksum:
+        description: Expected SHA-256 of CandidSDK.xcframework.zip (asserted, not trusted)
+        required: false
+        type: string
+
+concurrency:
+  group: bump-ios-sdk
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create bot token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CANDID_RELEASE_APP_ID }}
+          private-key: ${{ secrets.CANDID_RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Inputs go through the environment rather than being interpolated into the script, so a
+      # value containing shell metacharacters cannot become code.
+      - name: Pin the release
+        id: sync
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          SDK_VERSION: ${{ inputs.version }}
+          SDK_CHECKSUM: ${{ inputs.checksum }}
+        run: |
+          args=("$SDK_VERSION")
+          if [ -n "$SDK_CHECKSUM" ]; then
+            args+=(--checksum "$SDK_CHECKSUM")
+          fi
+          node internal/module_scripts/sync-ios-sdk.js "${args[@]}"
+
+      - name: Open the pull request
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          SDK_VERSION: ${{ steps.sync.outputs.version }}
+        run: |
+          BRANCH="bot/ios-sdk-$SDK_VERSION"
+          BOT_LOGIN="$BOT_SLUG[bot]"
+          BOT_USER_ID="$(gh api "users/$BOT_LOGIN" --jq .id)"
+
+          git config user.name "$BOT_LOGIN"
+          git config user.email "$BOT_USER_ID+$BOT_LOGIN@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add ios/candid-sdk.json
+          git commit -m "Update Candid iOS SDK to $SDK_VERSION"
+          git push --force origin "HEAD:$BRANCH"
+
+          if [ "$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')" != "0" ]; then
+            echo "A pull request for $BRANCH is already open, updated it in place"
+            exit 0
+          fi
+
+          gh pr create \
+            --head "$BRANCH" \
+            --title "Update Candid iOS SDK to $SDK_VERSION" \
+            --body "$(printf 'Pins [Candid iOS SDK %s](https://github.com/TryCandid/candid-ios-sdk/releases/tag/v%s) in `ios/candid-sdk.json`.\n\nCI does a real `pod install` and builds the example against the new binary. If `ios-build` fails, the SDK changed API the wrapper bridges: push the wrapper changes onto this branch.\n\nMerging only changes the pin. Publishing to npm is separate: bump `package.json`, add a `CHANGELOG.md` entry and push the matching `v*` tag when you want to ship.' \
+              "$SDK_VERSION" "$SDK_VERSION")"

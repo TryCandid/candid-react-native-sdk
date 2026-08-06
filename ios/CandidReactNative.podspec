@@ -1,14 +1,17 @@
 require 'digest'
 require 'fileutils'
+require 'json'
 require 'net/http'
 require 'uri'
 
 # The Candid iOS SDK is distributed as a binary XCFramework attached to releases of
 # https://github.com/TryCandid/candid-ios-sdk (the same artifact the SPM binary target uses).
-# The exact release is pinned here together with its SHA-256 checksum, downloaded once at
-# `pod install` time and cached next to this podspec.
-candid_sdk_version = '0.3.0'
-candid_sdk_checksum = 'e4b454e724d5404b91986889678f5afa91989cd0f8ccd2b14945bfb4fc7cdbea'
+# The exact release is pinned in candid-sdk.json together with its SHA-256 checksum, downloaded
+# once at `pod install` time and cached next to this podspec. Bump the pin with
+# `npm run sync:ios-sdk -- <version>`; the release automation edits the same file.
+candid_sdk_pin = JSON.parse(File.read(File.join(__dir__, 'candid-sdk.json')))
+candid_sdk_version = candid_sdk_pin['version']
+candid_sdk_checksum = candid_sdk_pin['checksum']
 candid_sdk_url = "https://github.com/TryCandid/candid-ios-sdk/releases/download/v#{candid_sdk_version}/CandidSDK.xcframework.zip"
 
 frameworks_dir = File.join(__dir__, 'Frameworks')
@@ -78,7 +81,9 @@ end
 
 Pod::Spec.new do |s|
   s.name           = 'CandidReactNative'
-  s.version        = '0.2.0'
+  # Single-sourced from package.json so the pod version cannot drift from the npm version.
+  # The path holds in the published tarball too (node_modules/@trycandid/react-native/ios/).
+  s.version        = JSON.parse(File.read(File.join(__dir__, '..', 'package.json')))['version']
   s.summary        = 'React Native wrapper for the Candid iOS SDK'
   s.description    = 'Expo module exposing the Candid in-app user testing and voice feedback SDK to React Native apps.'
   s.author         = 'Candid'

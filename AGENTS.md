@@ -14,6 +14,7 @@ This file gives AI coding agents the repo-specific context needed to work safely
 
 - `src/`: public TypeScript API (`index.ts`), native module declaration, and types mirroring `Candid.Configuration`.
 - `ios/`: the Expo module (`CandidReactNativeModule.swift`) and `CandidReactNative.podspec`.
+- `ios/candid-sdk.json`: the pinned Candid iOS SDK version and its XCFramework SHA-256.
 - `ios/Frameworks/`: the downloaded `CandidSDK.xcframework` (git-ignored, created by `pod install`).
 - `android/`: no-op stub module so cross-platform JS is safe.
 - `plugin/` + `app.plugin.js`: Expo config plugin (`NSMicrophoneUsageDescription` only). The iOS deployment target is owned by the podspec, not the plugin: it declares the SDK's 15.1 floor and mirrors the host app's `expo-modules-core` floor when it is higher (e.g. 16.4 on Expo SDK 57) so CocoaPods can resolve the `ExpoModulesCore` dependency across Expo SDK versions. Do not re-add a `withPodfileProperties` deployment-target mod — writing that key overrides the Expo template's own (higher) default and breaks `pod install`.
@@ -37,7 +38,11 @@ The Candid public API is main-actor isolated; Expo module functions run on the J
 
 ### Binary SDK delivery
 
-`ios/CandidReactNative.podspec` pins `candid_sdk_version` and `candid_sdk_checksum`, downloads `CandidSDK.xcframework.zip` from the public GitHub release during `pod install`, and verifies the SHA-256. Bumping the SDK version means updating both values. Do not vendor the XCFramework into the repo or npm package.
+`ios/candid-sdk.json` pins the Candid iOS SDK `version` and the `checksum` of its `CandidSDK.xcframework.zip`. `ios/CandidReactNative.podspec` reads that file, downloads the zip from the matching public GitHub release during `pod install`, verifies the SHA-256, and caches it in `ios/Frameworks/`. Do not vendor the XCFramework into the repo or npm package — `release.yml` fails the publish if it appears in the tarball.
+
+Bump the pin with `npm run sync:ios-sdk -- <version>` rather than editing the JSON by hand; the script resolves the release and takes the checksum from its `CandidSDK.xcframework.zip.checksum` asset, falling back to hashing the zip for releases before v0.4.0. `ios/candid-sdk.json` is the only file it writes. `npm run sync:ios-sdk -- --check` re-derives the checksum for the pinned version and is run by CI, so a hand-edited pin or a re-uploaded release asset fails the build.
+
+The npm version and the pod/Android module versions are single-sourced: `s.version` in the podspec and `version` in `android/build.gradle` both read `package.json`, so they cannot drift.
 
 ### Example app environment switcher
 
@@ -52,8 +57,10 @@ Keep the JS API compact and mirrored on the SDK's public API: `configure`, `regi
 Run from the package root:
 
 ```bash
-npm run build        # type-check and build the module to build/
+npm run build            # type-check and build the module to build/
 npm run lint
+npm run sync:ios-sdk -- --check     # the pinned SDK checksum still matches the release
+npm run sync:ios-sdk -- 0.4.0       # repin to a specific Candid iOS SDK release
 ```
 
 Example app (run from `example/`, never `expo run:ios` from the package root — it would try to reinitialize the module's ios/ folder):
@@ -79,6 +86,27 @@ xcodebuild -workspace example/ios/candidreactnativeexample.xcworkspace \
 ## Testing Expectations
 
 There is no unit test suite yet. For any change to the native module, overlay hosting, or the example app: build the example, run it on a simulator, capture a screenshot, and inspect it before considering the work done. Touch passthrough regressions are the highest-risk failure mode; verify that taps and scrolling work in the example whenever the overlay hosting changes.
+
+`ci.yml` runs on every pull request: lint, build and the pinned-checksum check on Linux, and on macOS a real `pod install` (which downloads and verifies the pinned XCFramework) followed by an `xcodebuild` of the example. The example's native project is not in the repo — `example/.gitignore` ignores `/ios` — so CI generates it with `expo prebuild` first.
+
+## Releasing
+
+Two independent halves: picking up a new Candid iOS SDK, and publishing to npm.
+
+**Picking up a new SDK.** On an SDK release, `publish-public-sdk.yml` in the SDK repo dispatches this repo's `Bump Candid iOS SDK` workflow, which opens a pull request whose entire diff is `ios/candid-sdk.json`. Check its CI: if `ios-build` fails, the SDK changed API the wrapper bridges, so push the wrapper changes onto that branch. Merging changes nothing but the pinned version. The same workflow is runnable by hand from the Actions tab (`version`, and optionally `checksum`) if a dispatch is ever missed.
+
+It authenticates as the `candid-release` GitHub App and needs `CANDID_RELEASE_APP_ID` and `CANDID_RELEASE_APP_PRIVATE_KEY`. The App token is not interchangeable with `GITHUB_TOKEN`: a pull request opened with the default token does not trigger `ci.yml`, so the gate would never run.
+
+**Publishing to npm** is manual and unchanged. Bump `version` in `package.json`, add the `CHANGELOG.md` entry, then push the matching tag:
+
+```bash
+npm version <version> --no-git-tag-version   # or edit package.json
+git commit -am "<version>"
+git tag -a "v<version>" -m "v<version>"
+git push origin master "refs/tags/v<version>"
+```
+
+`release.yml` runs on the tag, refuses to publish if the tag and `package.json` disagree, and publishes with provenance through npm trusted publishing. A prerelease version publishes under a dist-tag named after its prerelease identifier and never becomes `latest` (`v0.4.0-beta.0` → `beta`). `release.yml` must keep its filename and its `npm-release` environment, which the trusted-publisher registration is bound to.
 
 ## Guardrails
 
