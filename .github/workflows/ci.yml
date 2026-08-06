@@ -1,0 +1,95 @@
+name: CI
+
+# Runs on every pull request and on master. Before this existed, lint and build ran only inside
+# the tag-triggered release.yml, so a broken build was discovered after the tag was already pushed.
+#
+# The ios-build job is also the gate for the pin bump pull requests opened by bump-ios-sdk.yml: it
+# does a real `pod install`, which downloads and SHA-256 verifies the pinned XCFramework, and then
+# compiles the example against it. An iOS SDK release that changes API the wrapper bridges fails
+# here, on the pull request, instead of in a host app's Xcode build.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      # Re-derives the checksum for the pinned release and compares it to ios/candid-sdk.json,
+      # catching a hand-edited pin or a re-uploaded upstream release asset.
+      - name: Verify the pinned Candid iOS SDK checksum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run sync:ios-sdk -- --check
+
+  ios-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            example/package-lock.json
+
+      # Keyed on the pin, so a bump PR always misses the cache and exercises the real download and
+      # checksum verification, while unrelated PRs reuse the framework.
+      - name: Cache the downloaded XCFramework
+        uses: actions/cache@v4
+        with:
+          path: ios/Frameworks
+          key: candid-xcframework-${{ hashFiles('ios/candid-sdk.json') }}
+
+      - name: Install example dependencies
+        working-directory: example
+        run: npm ci
+
+      # example/.gitignore ignores /ios, so the native project is not in the repo and has to be
+      # generated. --no-install keeps pod install as its own step below.
+      - name: Generate the example iOS project
+        working-directory: example
+        run: npx expo prebuild --platform ios --no-install
+
+      # Downloads and SHA-256 verifies CandidSDK.xcframework.zip into ios/Frameworks/ via the
+      # podspec. LANG/LC_ALL because CocoaPods fails on a non-UTF-8 locale.
+      - name: pod install
+        working-directory: example
+        env:
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: npx pod-install ios
+
+      - name: Build the example app
+        run: |
+          xcodebuild \
+            -workspace example/ios/candidreactnativeexample.xcworkspace \
+            -scheme candidreactnativeexample \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            build
