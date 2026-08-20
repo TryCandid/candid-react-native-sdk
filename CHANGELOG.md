@@ -2,6 +2,10 @@
 
 ## Unpublished
 
+## 0.4.0 — 2026-08-20
+
+- Updated to Candid iOS SDK 0.4.0, which simplifies its configuration API: `reward` and `recordingDuration` move to the top level (the `Options` struct and `rewardText` are gone), the completion gift API becomes the reward API (`Reward`, `RewardSuccessMessage` with `.default`/`.hostHandled`), and `stepTimings` becomes a dictionary keyed by step type.
+
 ## 0.3.1 — 2026-08-04
 
 - Documentation update.
