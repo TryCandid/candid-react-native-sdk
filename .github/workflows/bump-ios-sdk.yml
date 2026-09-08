@@ -93,5 +93,5 @@ jobs:
           gh pr create \
             --head "$BRANCH" \
             --title "Update Candid iOS SDK to $SDK_VERSION" \
-            --body "$(printf 'Pins [Candid iOS SDK %s](https://github.com/TryCandid/candid-ios-sdk/releases/tag/v%s) in `ios/candid-sdk.json`.\n\nCI does a real `pod install` and builds the example against the new binary. If `ios-build` fails, the SDK changed API the wrapper bridges: push the wrapper changes onto this branch.\n\nMerging only changes the pin. Publishing to npm is separate: bump `package.json`, add a `CHANGELOG.md` entry and push the matching `v*` tag when you want to ship.' \
+            --body "$(printf 'Update [Candid iOS SDK %s](https://github.com/TryCandid/candid-ios-sdk/releases/tag/v%s) in `ios/candid-sdk.json`.\n\nRun `npm version minor` or `npm version patch` to release.' \
               "$SDK_VERSION" "$SDK_VERSION")"
