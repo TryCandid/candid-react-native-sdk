@@ -81,6 +81,12 @@ candid.registerTrigger('home', { oncePerUser: false });
 
 // Forward analytics events so Candid can match tasks.
 candid.log('add_to_playlist_save');
+
+// Session lifecycle (interview_requested, interview_started, step_completed, …).
+candid.addCandidEventListener((event) => {
+  // event.studyId when the event belongs to a study
+  // event.stepNumber on step_started / step_skipped / step_completed
+});
 ```
 
 See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (recording duration, step timings, appearance).

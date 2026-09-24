@@ -137,10 +137,14 @@ export default function App() {
 
   useEffect(() => {
     const subscription = addCandidEventListener((event) => {
-      const properties = event.properties && Object.keys(event.properties).length
-        ? ` ${JSON.stringify(event.properties)}`
-        : '';
-      setSdkEvents((current) => [`${event.name}${properties}`, ...current].slice(0, 20));
+      let text = event.name;
+      if (event.studyId) {
+        text += ` study_id=${event.studyId}`;
+      }
+      if (event.stepNumber != null) {
+        text += ` step_number=${event.stepNumber}`;
+      }
+      setSdkEvents((current) => [text, ...current].slice(0, 20));
     });
     return () => subscription.remove();
   }, []);

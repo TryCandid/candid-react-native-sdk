@@ -46,7 +46,7 @@ export function reset(): void {
 }
 
 /**
- * Subscribes to internal SDK actions (flow screen interactions) so the host app can
+ * Subscribes to Candid session lifecycle events so the host app can react or
  * forward them to its own analytics. The SDK does not send analytics itself.
  */
 export function addCandidEventListener(

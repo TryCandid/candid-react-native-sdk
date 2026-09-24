@@ -1,6 +1,10 @@
 # Changelog
 
-## Unpublished
+## 0.5.2 — 2026-09-24
+
+### Breaking changes
+
+- Updated to Candid iOS SDK 0.5.2. `addCandidEventListener` now forwards lifecycle events (`interview_requested`, `interview_declined`, `interview_started`, `interview_ended`, `step_started`, `step_skipped`, `step_completed`) with optional `studyId` and `stepNumber` instead of the old name/properties payload.
 
 ## 0.4.0 — 2026-08-20
 

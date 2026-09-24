@@ -16,7 +16,7 @@ export type CandidFont =
 export type CandidStepTiming = {
   /** How long before the step can be skipped. */
   canSkipAfter?: number;
-  /** How often the user is re-prompted. `0` disables re-prompting. */
+  /** Kept for compatibility; no longer schedules repeating reminder prompts. */
   promptEvery?: number;
 };
 
@@ -51,10 +51,18 @@ export type CandidConfiguration = {
   appearance?: CandidAppearance;
 };
 
-/** Internal SDK action forwarded through `addCandidEventListener`. */
+/**
+ * Host-facing Candid lifecycle event forwarded through `addCandidEventListener`.
+ * Known names: `interview_requested`, `interview_declined`, `interview_started`,
+ * `interview_ended`, `step_started`, `step_skipped`, `step_completed`. Future SDK
+ * events may use other names.
+ */
 export type CandidEventPayload = {
   name: string;
-  properties?: Record<string, unknown>;
+  /** Present when the event belongs to a study. */
+  studyId?: string;
+  /** 1-based step position on `step_started`, `step_skipped`, and `step_completed`. */
+  stepNumber?: number;
 };
 
 export type CandidReactNativeModuleEvents = {
