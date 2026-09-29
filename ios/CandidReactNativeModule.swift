@@ -2,7 +2,7 @@ import CandidSDK
 import ExpoModulesCore
 import UIKit
 
-public class CandidReactNativeModule: Module {
+public class CandidReactNativeModule: Module, CandidDelegate {
   public func definition() -> ModuleDefinition {
     Name("CandidReactNative")
 
@@ -11,14 +11,7 @@ public class CandidReactNativeModule: Module {
     Function("configure") { [weak self] (configuration: ConfigurationRecord?) in
       Self.onMain {
         Candid.configure(configuration.makeConfiguration())
-
-        Candid.eventHandler = { [weak self] name, properties in
-          self?.sendEvent("onCandidEvent", [
-            "name": name,
-            "properties": properties ?? [:],
-          ])
-        }
-
+        Candid.delegate = self
         CandidOverlayPresenter.attachIfNeeded()
       }
     }
@@ -46,6 +39,22 @@ public class CandidReactNativeModule: Module {
         Candid.reset()
       }
     }
+  }
+
+  @MainActor
+  public func handleCandidEvent(withInfo eventInfo: CandidEventInfo) {
+    var properties: [String: Any] = [:]
+    if let studyId = eventInfo.studyId {
+      properties["studyId"] = studyId
+    }
+    if let stepNumber = eventInfo.stepNumber {
+      properties["stepNumber"] = stepNumber
+    }
+
+    sendEvent("onCandidEvent", [
+      "name": eventInfo.event.name,
+      "properties": properties,
+    ])
   }
 
   /// The Candid public API is main-actor isolated; module functions are invoked on the JS
