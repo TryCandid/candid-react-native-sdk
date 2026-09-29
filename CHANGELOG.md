@@ -1,6 +1,6 @@
 # Changelog
 
-## Unpublished
+## 0.5.2 — 2026-09-29
 
 - Updated to Candid iOS SDK 0.5.2 and its new delegate-based event API. `onCandidEvent` payloads now include `studyId` and `stepNumber` in the properties dictionary for the current study and step.
 
