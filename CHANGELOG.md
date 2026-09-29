@@ -2,6 +2,8 @@
 
 ## Unpublished
 
+- Updated to Candid iOS SDK 0.5.2 and its new delegate-based event API. `onCandidEvent` payloads now include `studyId` and `stepNumber` in the properties dictionary for the current study and step.
+
 ## 0.4.0 — 2026-08-20
 
 - Updated to Candid iOS SDK 0.4.0, which simplifies its configuration API: `reward` and `recordingDuration` move to the top level (the `Options` struct and `rewardText` are gone), the completion gift API becomes the reward API (`Reward`, `RewardSuccessMessage` with `.default`/`.hostHandled`), and `stepTimings` becomes a dictionary keyed by step type.
