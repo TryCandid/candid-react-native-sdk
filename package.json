@@ -12,6 +12,7 @@
     "prepare": "node internal/module_scripts/prepare.js",
     "open:ios": "node internal/module_scripts/open-ios.js",
     "open:android": "node internal/module_scripts/open-android.js",
+    "example:ios": "node internal/module_scripts/example-ios.js",
     "sync:ios-sdk": "node internal/module_scripts/sync-ios-sdk.js"
   },
   "keywords": [

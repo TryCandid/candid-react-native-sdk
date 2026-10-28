@@ -59,6 +59,7 @@ Run from the package root:
 ```bash
 npm run build            # type-check and build the module to build/
 npm run lint
+npm run example:ios      # refresh dependencies and pods, then launch the iOS sample
 npm run sync:ios-sdk -- --check     # the pinned SDK checksum still matches the release
 npm run sync:ios-sdk -- 0.4.0       # repin to a specific Candid iOS SDK release
 ```

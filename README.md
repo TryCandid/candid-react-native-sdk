@@ -89,6 +89,18 @@ Not yet exposed by the wrapper: rewards (`Reward`) and custom font providers. Cu
 
 ## Development notes
 
+Start the iOS sample from the repository root on a Mac with Xcode and CocoaPods installed:
+
+```sh
+npm run example:ios
+```
+
+To select a device by name:
+
+```sh
+npm run example:ios -- --device "My iPhone"
+```
+
 - `npm run build` type-checks and builds the module to `build/`.
 - The example app's iOS project is already configured (microphone permission), so the config plugin is intentionally not listed in `example/app.json`.
 - The overlay is attached to the app's root view controller via `Candid.attachUIKitOverlay(to:)` (see `CandidOverlayPresenter` in `ios/CandidReactNativeModule.swift`). The SDK hosts it in the app's main window — so ReplayKit recordings capture the Candid UI — and only intercepts touches landing on visible Candid UI; everything else passes through to the React Native content.
