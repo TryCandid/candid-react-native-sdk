@@ -46,7 +46,7 @@ The npm version and the pod/Android module versions are single-sourced: `s.versi
 
 ### Example app environment switcher
 
-The SDK always targets the production Candid API (`baseURL` is internal to the SDK by design). The example's Local / Staging / Prod switcher works through a debug-only `URLProtocol` in `example/ios/candidreactnativeexample/AppDelegate.swift` that rewrites Candid API requests to the base URL the JS side persists via React Native's `Settings` API (key `candidBaseURLOverride`). This is the React Native counterpart of the iOS sample's `@testable` base URL override. Keep it example-only and `#if DEBUG`; do not expose a base URL in the wrapper's public API.
+The SDK targets the production Candid API unless the process environment sets `CANDID_API_BASE_URL` (and `CANDID_CONFIG_BASE_URL` for the config CDN), which it reads on every `configure`. The example's Local / Staging / Prod switcher sets those variables before calling `configure`, through `setenv` in the example-only local module `example/modules/candid-example-environment` (autolinked via `searchPaths` in `example/package.json`). Keep it in the example; do not expose a base URL in the wrapper's public API.
 
 ## Public API Stability
 

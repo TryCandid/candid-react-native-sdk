@@ -25,6 +25,8 @@ import {
   View,
 } from 'react-native';
 
+import { setEnvironmentVariable } from './modules/candid-example-environment';
+
 const DEFAULT_USER_ID = 'candid-sample-user';
 
 type SampleEnvironment = 'local' | 'staging' | 'production';
@@ -37,8 +39,7 @@ const ENVIRONMENTS: { id: SampleEnvironment; title: string; baseURL: string }[] 
   { id: 'production', title: 'Prod', baseURL: PRODUCTION_BASE_URL },
 ];
 
-// Persistence mirrors the iOS sample (UserDefaults-backed). `Settings` is iOS only; the
-// native side also reads `candidBaseURLOverride` to reroute Candid API requests in debug.
+// Persistence mirrors the iOS sample (UserDefaults-backed). `Settings` is iOS only.
 const settingsGet = (key: string): string | undefined =>
   Platform.OS === 'ios' ? (Settings.get(key) as string | undefined) : undefined;
 const settingsSet = (values: Record<string, string>) => {
@@ -55,6 +56,19 @@ const savedBaseURL = (environment: SampleEnvironment) => {
     return settingsGet('candidLocalBaseURL') || environmentBaseURL;
   }
   return environmentBaseURL;
+};
+
+// The SDK reads these on every `configure`. Staging's config CDN follows its API host; a local
+// API serves config from LocalStack on port 4566, as in the iOS sample.
+const applyEnvironmentVariables = (environment: SampleEnvironment, baseURL: string) => {
+  const isProduction = environment === 'production';
+  setEnvironmentVariable('CANDID_API_BASE_URL', isProduction ? null : baseURL);
+  setEnvironmentVariable(
+    'CANDID_CONFIG_BASE_URL',
+    environment === 'local'
+      ? baseURL.replace(/^(https?:\/\/[^/:]+).*$/, '$1:4566/candid.local.config')
+      : null
+  );
 };
 
 const initialEnvironment: SampleEnvironment =
@@ -140,6 +154,7 @@ export default function App() {
   const [hidesPrivateInfo, setHidesPrivateInfo] = useState(true);
 
   useEffect(() => {
+    applyEnvironmentVariables(environment, baseURL);
     configure({
       apiKey: apiKey || undefined,
       recordingDuration,
@@ -153,6 +168,8 @@ export default function App() {
       },
     });
   }, [
+    environment,
+    baseURL,
     apiKey,
     recordingDuration,
     primaryColor,
@@ -179,8 +196,6 @@ export default function App() {
   useEffect(() => {
     settingsSet({
       candidEnvironment: environment,
-      // Read by the debug-only URLProtocol in AppDelegate to reroute Candid API requests.
-      candidBaseURLOverride: environment === 'production' ? '' : baseURL,
       candidUserId: userId,
       [apiKeySettingsKey(environment)]: apiKey,
       ...(environment === 'local' ? { candidLocalBaseURL: baseURL } : {}),
