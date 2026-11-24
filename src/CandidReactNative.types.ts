@@ -51,6 +51,30 @@ export type CandidConfiguration = {
   appearance?: CandidAppearance;
 };
 
+/**
+ * Audience attribute value. Numbers must be finite. `null` is stored as an explicit null,
+ * which is a present value for audience conditions.
+ */
+export type CandidUserPropertyValue = string | number | boolean | null;
+
+export type CandidUserProperties = Record<string, CandidUserPropertyValue>;
+
+/**
+ * What a redacted area hides. Candid writes it on the recording mask so feedback analysis
+ * knows what was hidden without seeing it. Custom values should be a few English words
+ * describing the content, never the content itself; values longer than 32 characters are
+ * shortened.
+ */
+export type CandidRedactionKind =
+  | 'message'
+  | 'photo'
+  | 'video'
+  | 'payment'
+  | 'personal info'
+  | 'password'
+  | 'location'
+  | (string & {});
+
 /** Internal SDK action forwarded through `addCandidEventListener`. */
 export type CandidEventPayload = {
   name: string;

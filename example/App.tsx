@@ -2,9 +2,14 @@ import {
   addCandidEventListener,
   configure,
   log,
+  logout,
   registerTrigger,
+  reset,
   setUserId as setCandidUserId,
+  setUserProperties,
+  CandidRedactedView,
   CandidSystemFontDesign,
+  CandidUserPropertyValue,
   CandidWidgetPosition,
 } from '@trycandid/react-native';
 import { useEffect, useState } from 'react';
@@ -90,11 +95,32 @@ const SAMPLE_EVENTS = [
   { title: 'Show top charts for house music', name: 'candid_select_house_top_charts' },
 ];
 
+type PropertyType = 'String' | 'Number' | 'Boolean' | 'Null';
+
+const PROPERTY_TYPES: PropertyType[] = ['String', 'Number', 'Boolean', 'Null'];
+
+const parsePropertyValue = (
+  type: PropertyType,
+  text: string
+): CandidUserPropertyValue | undefined => {
+  switch (type) {
+    case 'String':
+      return text;
+    case 'Number': {
+      const number = Number(text);
+      return text.trim() !== '' && Number.isFinite(number) ? number : undefined;
+    }
+    case 'Boolean':
+      return text === 'true' ? true : text === 'false' ? false : undefined;
+    case 'Null':
+      return null;
+  }
+};
+
 export default function App() {
   const [environment, setEnvironment] = useState<SampleEnvironment>(initialEnvironment);
   const [baseURLDraft, setBaseURLDraft] = useState(initialBaseURL);
   const [baseURL, setBaseURL] = useState(initialBaseURL);
-  const [apiKeyDraft, setApiKeyDraft] = useState(initialApiKey);
   const [apiKey, setApiKey] = useState(initialApiKey);
   const [userIdDraft, setUserIdDraft] = useState(initialUserId);
   const [userId, setUserId] = useState(initialUserId);
@@ -107,6 +133,11 @@ export default function App() {
   const [widgetVerticalPadding, setWidgetVerticalPadding] = useState(172);
   const [lastLoggedEvent, setLastLoggedEvent] = useState('No events logged');
   const [sdkEvents, setSdkEvents] = useState<string[]>([]);
+  const [propertyKey, setPropertyKey] = useState('plan');
+  const [propertyType, setPropertyType] = useState<PropertyType>('String');
+  const [propertyValue, setPropertyValue] = useState('premium');
+  const [audienceStatus, setAudienceStatus] = useState('No user properties set');
+  const [hidesPrivateInfo, setHidesPrivateInfo] = useState(true);
 
   useEffect(() => {
     configure({
@@ -166,7 +197,6 @@ export default function App() {
     setBaseURLDraft(nextBaseURL);
     const nextApiKey = settingsGet(apiKeySettingsKey(nextEnvironment)) ?? '';
     setApiKey(nextApiKey);
-    setApiKeyDraft(nextApiKey);
   };
 
   return (
@@ -205,9 +235,8 @@ export default function App() {
           <Text style={styles.label}>API key</Text>
           <TextInput
             style={styles.input}
-            value={apiKeyDraft}
-            onChangeText={setApiKeyDraft}
-            onEndEditing={() => setApiKey(apiKeyDraft.trim())}
+            value={apiKey}
+            onChangeText={(text) => setApiKey(text.trim())}
             placeholder="cpk_..."
             autoCapitalize="none"
             autoCorrect={false}
@@ -321,6 +350,101 @@ export default function App() {
             />
           ))}
           <Text style={styles.status}>{lastLoggedEvent}</Text>
+        </Group>
+
+        <Group name="Audience">
+          <Text style={styles.label}>Property key</Text>
+          <TextInput
+            style={styles.input}
+            value={propertyKey}
+            onChangeText={setPropertyKey}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="done"
+          />
+          <Text style={styles.label}>Type</Text>
+          <View style={styles.chipRow}>
+            {PROPERTY_TYPES.map((type) => (
+              <Chip
+                key={type}
+                title={type}
+                selected={propertyType === type}
+                onPress={() => setPropertyType(type)}
+              />
+            ))}
+          </View>
+          {propertyType === 'Null' ? null : (
+            <>
+              <Text style={styles.label}>Value</Text>
+              <TextInput
+                style={styles.input}
+                value={propertyValue}
+                onChangeText={setPropertyValue}
+                placeholder={propertyType === 'Boolean' ? 'true or false' : undefined}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+              />
+            </>
+          )}
+          <ActionRow
+            title="Set user property"
+            emphasized
+            onPress={() => {
+              const key = propertyKey.trim();
+              const value = parsePropertyValue(propertyType, propertyValue);
+              if (!key || value === undefined) {
+                setAudienceStatus(`Invalid ${propertyType.toLowerCase()} property`);
+                return;
+              }
+              setUserProperties({ [key]: value });
+              setAudienceStatus(`Set ${JSON.stringify({ [key]: value })}`);
+            }}
+          />
+          <ActionRow
+            title="Reset presentation history and properties"
+            onPress={() => {
+              reset();
+              setAudienceStatus('Reset all users');
+            }}
+          />
+          <ActionRow
+            title="Log out"
+            onPress={() => {
+              logout();
+              setUserId('');
+              setUserIdDraft('');
+              setAudienceStatus('Logged out');
+            }}
+          />
+          <Text style={styles.status}>{audienceStatus}</Text>
+        </Group>
+
+        <Group name="Privacy experiment">
+          <Text>Public label: visible in recordings</Text>
+          <CandidRedactedView
+            style={styles.privateCard}
+            redacted={hidesPrivateInfo}
+            kind="personal info"
+          >
+            <Text style={styles.privateTitle}>Sample account</Text>
+            <Text>alex@example.com</Text>
+          </CandidRedactedView>
+          <CandidRedactedView
+            style={styles.privateCard}
+            redacted={hidesPrivateInfo}
+            kind="order history"
+          >
+            <Text style={styles.privateTitle}>Last order</Text>
+            <Text>Wireless earbuds · $129</Text>
+          </CandidRedactedView>
+          <View style={styles.chipRow}>
+            <Chip
+              title="Hide private info in recordings"
+              selected={hidesPrivateInfo}
+              onPress={() => setHidesPrivateInfo(!hidesPrivateInfo)}
+            />
+          </View>
         </Group>
 
         <Group name="SDK events">
@@ -453,6 +577,8 @@ const styles = StyleSheet.create({
   },
   stepperButtonText: { fontSize: 20, color: '#333' },
   actionRow: { paddingVertical: 10 },
+  privateCard: { paddingVertical: 8, marginTop: 8 },
+  privateTitle: { fontWeight: '600', marginBottom: 4 },
   actionText: { fontSize: 16, color: '#0a7ea4' },
   actionTextEmphasized: { fontWeight: '600' },
 });

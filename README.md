@@ -70,8 +70,11 @@ candid.configure({
 });
 
 // Any time, before or after `configure` (e.g. once the user logs in). Pass `null` to clear
-// it; without a user id, requests are sent anonymously.
+// it; without a user id, studies are evaluated anonymously.
 candid.setUserId('user-123');
+
+// Optional audience attributes, matched against study audience conditions.
+candid.setUserProperties({ country: 'FR', nb_purchases: 3 });
 
 // Register that a trigger fired. The backend decides whether to present a study.
 candid.registerTrigger('home');
@@ -81,7 +84,30 @@ candid.registerTrigger('home', { oncePerUser: false });
 
 // Forward analytics events so Candid can match tasks.
 candid.log('add_to_playlist_save');
+
+// When the user logs out.
+candid.logout();
 ```
+
+### User properties
+
+`setUserProperties` merges the given keys into the current user's properties. Values can be strings, numbers, booleans, or `null`.
+
+`logout()` clears the user id and the anonymous user's data. `reset()` clears every user's data.
+
+### Sensitive views in recordings
+
+Wrap sensitive content in `CandidRedactedView` to mask its area in Candid recordings. The content stays visible and interactive in the app. `kind` labels the mask with what it hides (`message`, `photo`, `video`, `payment`, `personal info`, `password`, `location`, or a few words of your own).
+
+```tsx
+import { CandidRedactedView } from '@trycandid/react-native';
+
+<CandidRedactedView kind="personal info">
+  <Text>{user.email}</Text>
+</CandidRedactedView>;
+```
+
+Pass `redacted={false}` to toggle the mask off without changing the view hierarchy. On Android and web, `CandidRedactedView` renders a plain `View`.
 
 See `src/CandidReactNative.types.ts` for the full `CandidConfiguration` shape (recording duration, step timings, appearance).
 

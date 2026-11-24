@@ -1,4 +1,8 @@
-import { CandidConfiguration, CandidEventPayload } from './CandidReactNative.types';
+import {
+  CandidConfiguration,
+  CandidEventPayload,
+  CandidUserProperties,
+} from './CandidReactNative.types';
 import CandidReactNativeModule from './CandidReactNativeModule';
 
 /** Structural match for expo's `EventSubscription`. */
@@ -24,6 +28,16 @@ export function setUserId(userId: string | null): void {
 }
 
 /**
+ * Merges audience attributes into the current user's profile, used to check study audience
+ * conditions. Supports strings, booleans, finite numbers and `null`; other values are ignored.
+ * Profiles persist on the device, one per user id plus one for anonymous users, and are never
+ * sent to Candid. Can be called before or after `configure`; does not present studies.
+ */
+export function setUserProperties(properties: CandidUserProperties): void {
+  CandidReactNativeModule.setUserProperties(properties);
+}
+
+/**
  * Registers that `trigger` fired, resolves the study the backend selects for it (for the
  * configured user), and presents that study when one is selected. No UI is shown when the
  * user is sampled out or no study matches the trigger.
@@ -40,9 +54,21 @@ export function log(event: string, properties?: Record<string, unknown>): void {
   CandidReactNativeModule.log(event, properties ?? null);
 }
 
-/** Clears the persisted per-user presentation history. */
+/**
+ * Closes the current study and clears every user's presentation history and user properties.
+ * The configured user id is kept.
+ */
 export function reset(): void {
   CandidReactNativeModule.reset();
+}
+
+/**
+ * Call when the user logs out. Closes the current study, clears the user id, and erases
+ * anonymous user properties and presentation history. Identified users keep their profiles
+ * and history for when they log back in.
+ */
+export function logout(): void {
+  CandidReactNativeModule.logout();
 }
 
 /**
@@ -56,4 +82,5 @@ export function addCandidEventListener(
 }
 
 export * from './CandidReactNative.types';
+export { default as CandidRedactedView, CandidRedactedViewProps } from './CandidRedactedView';
 export { default as CandidReactNativeModule } from './CandidReactNativeModule';
