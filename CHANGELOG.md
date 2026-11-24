@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Updated to Candid iOS SDK 0.6.4.
+- Added `setUserProperties(properties)` for study audience conditions, and `logout()`.
+- Added `CandidRedactedView` to mask sensitive views in recordings, with an optional `kind` label.
+- `reset()` now also clears user properties.
+
 ## 0.5.2 — 2026-09-29
 
 - Updated to Candid iOS SDK 0.5.2 and its new delegate-based event API. `onCandidEvent` payloads now include `studyId` and `stepNumber` in the properties dictionary for the current study and step.

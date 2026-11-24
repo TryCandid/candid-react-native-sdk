@@ -22,6 +22,12 @@ public class CandidReactNativeModule: Module, CandidDelegate {
       }
     }
 
+    Function("setUserProperties") { (properties: [String: Any]) in
+      Self.onMain {
+        Candid.setUserProperties(properties)
+      }
+    }
+
     Function("registerTrigger") { (trigger: String, oncePerUser: Bool?) in
       Self.onMain {
         Candid.register(trigger: trigger, oncePerUser: oncePerUser ?? true)
@@ -37,6 +43,26 @@ public class CandidReactNativeModule: Module, CandidDelegate {
     Function("reset") {
       Self.onMain {
         Candid.reset()
+      }
+    }
+
+    Function("logout") {
+      Self.onMain {
+        Candid.logout()
+      }
+    }
+
+    View(CandidRedactedView.self) {
+      Prop("redacted", true) { (view: CandidRedactedView, redacted: Bool) in
+        view.redacted = redacted
+      }
+
+      Prop("kind") { (view: CandidRedactedView, kind: String?) in
+        view.kind = kind
+      }
+
+      OnViewDidUpdateProps { (view: CandidRedactedView) in
+        view.applyRedaction()
       }
     }
   }
@@ -97,6 +123,19 @@ enum CandidOverlayPresenter {
 
     Candid.attachUIKitOverlay(to: rootViewController)
     attached = true
+  }
+}
+
+// MARK: - Redaction
+
+/// Container whose bounds, children included, are masked in Candid recordings. The SDK tracks
+/// registered views weakly and skips those outside a window, so no unregistration is needed.
+final class CandidRedactedView: ExpoView {
+  var redacted = true
+  var kind: String?
+
+  func applyRedaction() {
+    Candid.setRedacted(redacted, for: self, kind: kind.map(Candid.RedactionKind.init(rawValue:)))
   }
 }
 

@@ -17,6 +17,9 @@ class CandidReactNativeModule : Module() {
     Function("setUserId") { _: String? ->
     }
 
+    Function("setUserProperties") { _: Map<String, Any?> ->
+    }
+
     Function("registerTrigger") { _: String, _: Boolean? ->
     }
 
@@ -24,6 +27,9 @@ class CandidReactNativeModule : Module() {
     }
 
     Function("reset") {
+    }
+
+    Function("logout") {
     }
   }
 }
